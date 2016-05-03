@@ -1,0 +1,338 @@
+<!DOCTYPE HTML>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>动态气泡图 - bata 1</title>
+<style>
+canvas	{ border: 0px solid black; }
+.axis	{font-weight:bold; text-align:center;overflow:hidden;border:1px #808080 solid;width:400px;height:16px;}
+
+.rotate	{
+	-webkit-transform:rotate(270deg);
+    -moz-transform:rotate(270deg);
+    filter:progid:DXImageTransform.Microsoft.BasicImage(Rotation=3);
+    margin-left:-190px;margin-top:190px;                 /* FF,OP支持 */
+	/*[margin-top:0; margin-left: -190px;      SF,CH支持 */
+}
+/*============== 下拉框 ================*/
+.nav{
+	list-style:none;
+	font-size:12px;
+}
+.nav li{
+	float:left;
+	width: 60px;
+	position:relative;
+	/*控制下拉框的位置，让它在 "菜单二"的"LI"下面活动*/
+	height:22px;
+	/*这个一定要定义的，"菜单"一栏的高度，也是onmouseover和onmouseout使用的范围*/
+	padding-top:4px;
+}
+.nav li ul{
+	display:none;
+	/*让菜单二下面的"ul"不要显示，配合onmouseover和onmouseout显示*/
+	position:absolute;
+	/*让菜单二下面的下拉"UL"显示，并不要把菜单栏撑大（撑大效果见下面，我会贴出来的，哈哈）*/
+	top:22px;
+	/*此属性唯有定义了position:absolute;属性才能使用，是定位下拉框的，距离上面多少*/
+	left:0px;
+	/*此属性唯有定义了position:absolute;属性才能使用，是定位下拉框的，距离左边多少*/
+	border:1px solid black;
+}
+.nav li ul li{
+	float:left;
+	padding:2px 2px 2px 8px;
+	/*background-color:#F7FCFF;*/
+	width:60px;
+	list-style:none;
+}
+.nav li:hover ul , #nav li.over ul{
+	display:block;
+/*显示下拉框*/
+}
+/*============== /下拉框 ================*/
+
+.AxisCombo	{z-index:200;position:absolute; display:none; height:390px; overflow-x:hidden; overflow-y:scroll; border: 1px solid #808080; padding:10px;}
+
+
+.winSlider    { margin:0;padding:0; height:20px; background-color:#E0E0E0; border:2px solid #B2B2B2; }
+.winBar       { margin:0;padding:0; height:20px; width:10px; border:2px outset buttonhighlight; background-color:#D4D0C8; }
+
+#iPlay	{width:180px; height:20px;font-size:18px; font-weight:bold; background-color:#EFEFEF; text-align:center; border:2px solid #B2B2B2; cursor:pointer; margin-bottom: 20px;}
+#iPlay:hover	{background-color:#FFFFFF;}
+</style>
+<script src="js_core/color.js"></script>
+<script src="js_core/paintchart.js"></script>
+<!--<script src="js_core/series_demo.js"></script>-->
+<script src="js_core/series.js"></script>
+<script src="js_core/config.js"></script>
+<script src="js_core/slider_extras.js"></script>
+<script>
+
+var $v=function(id){
+    return document.getElementById(id).value;
+}
+var $=function(id){
+    return document.getElementById(id);
+}
+var iDate, iDateIndex = 0;
+
+drawNext = function(){
+	iDateIndex++;
+	if(iDateIndex > DateRange.length - 1)
+		iDateIndex = DateRange.length - 1;
+	draw(iDateIndex, false);
+}
+drawPrev = function(){
+	iDateIndex--;
+	if(iDateIndex <= 0)
+		iDateIndex = 0;
+	draw(iDateIndex, false);
+}
+
+function MoveSelectBox(){
+	$("Axis_X").style.top = parseInt($("MyGrid").style.top) + parseInt($("MyGrid").clientHeight) - 30 + "px";
+	$("Axis_X").style.left = parseInt($("MyGrid").style.left) + parseInt($("MyGrid").clientWidth) / 2 - 200 + "px";
+	$("Axis_X").style.display = "block";
+	$("ShowType_X").style.top = $("Axis_X").style.top;
+	$("ShowType_X").style.left = parseInt($("Axis_X").style.left) + 420 + "px";
+	$("Axis_Y").style.top = parseInt($("MyGrid").style.top) + parseInt($("MyGrid").clientHeight) / 2 - 190 + "px";
+	$("Axis_Y").style.left = parseInt($("MyGrid").style.left) + 5 + "px";
+	$("Axis_Y").style.display = "block";
+	$("ShowType_Y").style.top = parseInt($("Axis_Y").style.top) - 55 + "px";
+	$("ShowType_Y").style.left = parseInt($("Axis_Y").style.left) + 175 + "px";
+	
+	$("Axis_R").style.backgroundColor = "#EFEFEF";
+	$("Axis_R").style.display = "block";
+	$("Axis_R_List").style.left = $("Axis_R").style.left;
+	$("Axis_R_List").style.top = parseInt($("Axis_R").style.top) + 30 + "px";
+	
+	$("Axis_X_List").style.left = $("Axis_X").style.left;
+	$("Axis_X_List").style.top = parseInt($("Axis_X").style.top) - 410 + "px";
+	$("Axis_X_List").style.width = parseInt($("Axis_X").style.width) - 10 + "px";
+	
+	$("Axis_Y_List").style.left = parseInt($("Axis_Y").style.left) + 28 + "px";;
+	$("Axis_Y_List").style.top = parseInt($("Axis_Y").style.top) - 2 + "px";
+	
+	
+	$("ShowType_X_List").style.left = $("ShowType_X").style.left;
+	$("ShowType_X_List").style.top = parseInt($("ShowType_X").style.top) - 60 + "px";
+	$("ShowType_X_List").style.width = parseInt($("ShowType_X").style.width) - 10 + "px";
+	
+	$("ShowType_Y_List").style.left = parseInt($("ShowType_Y").style.left) -145 + "px";;
+	$("ShowType_Y_List").style.top = parseInt($("ShowType_Y").style.top) - 15 + "px";
+	//$("Axis_Y_List").style.width = $("Axis_Y").style.width;
+	//$("ShowType_Y").style.width = "50px";
+	
+	$("MyRadius").style.top = parseInt($("MyGrid").style.top) + parseInt($("MyGrid").clientHeight) - 35 + "px";
+	$("MyRadius").style.left = parseInt($("MyGrid").style.left) + parseInt($("MyGrid").clientWidth) - 200 + "px";
+	$("MyRadiusUp").style.top = $("MyRadius").style.top;
+	$("MyRadiusUp").style.left = $("MyRadius").style.left;
+	
+	$("MySlider").style.top = parseInt($("MyGrid").style.top) + parseInt($("MyGrid").clientHeight) + 30 + "px";
+	$("MySlider").style.left = parseInt($("MyGrid").style.left) + 200 + "px";
+	$("MySlider").style.width = $("MyGrid").clientWidth - 200 + "px";
+
+	$("iPlay").style.top = $("MySlider").style.top;
+	$("iPlay").style.left = parseInt($("MySlider").style.left) - 200 + "px";
+	$("blankline").style.top = parseInt($("MySlider").style.top) + 20 + "px";
+	
+}
+
+
+function GetAxisInfo(){
+	var lastChar = "";
+	Split = false;
+	for(var i = 0; i < Config_Axis.length; i++){
+		Char = Config_Axis[i].substring(0, 1);
+		lastChar = lastChar == "" ? Char : isSplit();
+		isSplit = function(){
+			if(lastChar != Char){Split = true; return Char;}else{Split = false; return lastChar;}
+		}
+		insertEle($("Axis_X_List"), Config_Axis[i], Split);
+		insertEle($("Axis_Y_List"), Config_Axis[i], Split);
+		insertEle($("Axis_R_List"), Config_Axis[i], Split);
+	}
+	//$("Axis_X_List").style.display = "block";
+}
+
+function insertEle(obj, txt, Split) {
+	if(Split){
+		var newNode = document.createElement("div");
+		newNode.innerHTML = "--------------------------------";
+		newNode.style.fontSize = "3px";
+		obj.appendChild(newNode, null);
+	}
+	var newNode = document.createElement("div");
+	
+	newNode.innerHTML = txt;
+	newNode.id = txt;
+	newNode.style.fontSize = "12px";
+	newNode.style.cursor = "pointer";
+	newNode.style.marginBottom = "3px";
+	newNode.onclick = function(){eval(obj.id.substring(0, 6) + "_Name = " + txt );$(obj.id.substring(0, 6) + "_lbl").innerHTML = txt;obj.style.display = "none";draw(iDateIndex, true, 1000, 650, undefined, undefined, true);;}
+	newNode.onmouseover = function(){this.style.background = "#6A6A6A"}
+	newNode.onmouseout = function(){this.style.background = ""}
+	//oTest.appendChild(newNode);
+	obj.appendChild(newNode, null); // 这两种方法均可实现
+
+}
+
+function ShowAxisSelect(Axis){
+	
+	window.onclick = null;
+	$("Axis_" + Axis + "_List").style.display = $("Axis_" + Axis + "_List").style.display == "block" ? "none" : "block";
+	tmp = Axis == "X" ? "Y" : "X";
+	$("Axis_" + tmp + "_List").style.display = "none";
+	
+	setTimeout("ComboOutClock()", 50);
+
+}
+function ShowAxisTypeSelect(Axis){
+	
+	window.onclick = null;
+	$("ShowType_" + Axis + "_List").style.display = $("ShowType_" + Axis + "_List").style.display == "block" ? "none" : "block";
+	tmp = Axis == "X" ? "Y" : "X";
+	$("ShowType_" + tmp + "_List").style.display = "none";
+	
+	setTimeout("ComboOutClock()", 50);
+
+}
+
+ComboOutClock = function(){
+	window.onclick = function(){
+		$('Axis_X_List').style.display = 'none';
+		$('Axis_Y_List').style.display = 'none';
+		$('Axis_R_List').style.display = 'none';
+		$('ShowType_X_List').style.display = 'none';
+		$('ShowType_Y_List').style.display = 'none';
+	}
+
+}
+</script>
+</head>
+<body  unselectable="on" style="-moz-user-select:none;background:#eeeeee;" onselectstart="return false;">
+	<!--'MyGrid', 2.3, 2.1, '', 1024, 768, '', 'XXX', 'YYY', 1000, 650-->
+	<div id="SegmentStyle" style="margin-left:80px; ">
+		<!--<input type="button" value="Draw" onClick="draw(0, true, 1000, 650, undefined, undefined, true);" />-->
+		
+		<!--<input type="button" value="Next >>" onClick="drawNext();" />
+		
+		<input type="button" value="<< Pref" onClick="drawPrev();" />-->
+	</div>
+	<br style="clear:both;" />
+	<div id="MousePos"></div>
+	<br style="clear:both;" />
+	<canvas id="iDate" width="1000" height="650" style="z-index:1;position:absolute; top:50px; left:85px;"></canvas>
+	<canvas id="MyChart" width="920" height="550" style="z-index:102;position:absolute; top:100px; left:165px;"></canvas>
+	<canvas id="MySelected" width="920" height="550" style="z-index:110;position:absolute; top:100px; left:165px;"></canvas>
+	<!--<canvas id="MyMouseOver" width="1000" height="650" style="z-index:100;position:absolute;"></canvas>-->
+	<canvas id="MyTip" width="1000" height="650" style="z-index:101;position:absolute; top:50px; left:85px;"></canvas>
+	<canvas id="MyGrid" width="1000" height="650" style="z-index:100;position:absolute; top:50px; left:85px;"></canvas>
+	<canvas id="MyRadiusUp" width="180" height="35" style="z-index:300;position:absolute;background-color: #E0E0E0;"></canvas>
+	<canvas id="MyRadius" width="180" height="35" style="z-index:301;position:absolute;cursor:pointer;"></canvas>
+	<div style="z-index:0;position:absolute; background:#FFF; width:1000px; height:650px; border:1px solid #808080; top:50px; left:85px;"></div>
+	
+	<div id="ShowType_X" class="axis" style="z-index:200;position:absolute; width:50px; padding-left: 0px; overflow:visible; margin-top:0px;cursor:pointer; padding:4px;" onClick="ShowAxisTypeSelect('X')" >Lin</div>
+	<div id="ShowType_X_List" class="AxisCombo" style="width:60px;height:40px;background-color:#FFFFFF; overflow: hidden;">
+		<div style="cursor:pointer;font-size: 12px; cursor: pointer; margin-bottom: 3px; font-weight:bold;" onmouseover = "this.style.background = '#6A6A6A'" onmouseout = "this.style.background = ''" onClick="draw(iDateIndex, true, undefined, undefined, 'Lin'); $('ShowType_X').innerHTML = 'Lin';">Lin</div>
+		<div style="font-size: 3px;">------</div>
+		<div style="cursor:pointer;font-size: 12px; cursor: pointer; margin-bottom: 3px; font-weight:bold;" onmouseover = "this.style.background = '#6A6A6A'" onmouseout = "this.style.background = ''" onClick="draw(iDateIndex, true, undefined, undefined, 'Log'); $('ShowType_X').innerHTML = 'Log';">Log</div>
+	</div>
+	<div id="ShowType_Y" class="rotate axis" style="z-index:200;position:absolute; width:50px; padding-left: 0px; overflow:visible; margin-top:0px;cursor:pointer; padding:4px;" onClick="ShowAxisTypeSelect('Y')" >Log</div>
+	<div id="ShowType_Y_List" class="AxisCombo" style="width:60px;height:40px;background-color:#FFFFFF; overflow: hidden;">
+		<div style="cursor:pointer;font-size: 12px; cursor: pointer; margin-bottom: 3px; font-weight:bold;" onmouseover = "this.style.background = '#6A6A6A'" onmouseout = "this.style.background = ''" onClick="draw(iDateIndex, true, undefined, undefined, undefined, 'Lin'); $('ShowType_Y').innerHTML = 'Lin';">Lin</div>
+		<div style="font-size: 3px;">------</div>
+		<div style="cursor:pointer;font-size: 12px; cursor: pointer; margin-bottom: 3px; font-weight:bold;" onmouseover = "this.style.background = '#6A6A6A'" onmouseout = "this.style.background = ''" onClick="draw(iDateIndex, true, undefined, undefined, undefined, 'Log'); $('ShowType_Y').innerHTML = 'Log';">Log</div>
+	</div>
+	<div id="Axis_X" class="axis" style="z-index:200;position:absolute; display:none; width:400px; cursor:pointer; padding:5px; background-color:#FFFFFF;" onClick="ShowAxisSelect('X')">
+		<div id="Axis_X_lbl" style="width:350px; float:left;margin-top: -2px;"></div>
+		<div style="float:right;margin-top: -2px;">&nabla;</div>
+	</div>
+	<div id="Axis_X_List" class="AxisCombo" style="width:380px;background-color:#FFFFFF;"></div>
+	<div id="Axis_Y" class="rotate axis" style="z-index:200;position:absolute; display:none; cursor:pointer; padding:5px; background-color:#FFFFFF;" onClick="ShowAxisSelect('Y')">
+		<div id="Axis_Y_lbl" style="width:350px; float:left;margin-top: -2px;"></div>
+		<div style="float:right;margin-top: -2px;">&nabla;</div>
+	</div>
+	<div id="Axis_Y_List" class="AxisCombo" style="width:380px;background-color:#FFFFFF;"></div>
+	<div id="Axis_R" class="axis" style="z-index:200;position:absolute; display:none; cursor:pointer; padding:5px; background-color:#FFFFFF;top: 60px; width: 300px; left: 750px;" onClick="ShowAxisSelect('R')">
+		<div style="width:10px; float:left;margin-top: -2px;">R:</div>
+		<div id="Axis_R_lbl" style="width:250px; float:left;margin-top: -2px;"></div>
+		<div style="float:right;margin-top: -2px;">&nabla;</div>
+	</div>
+	<div id="Axis_R_List" class="AxisCombo" style="width:380px;background-color:#FFFFFF;"></div>
+	<br style="clear:both;" />
+	<div id="MySlider" style="height:20px;position:absolute;"></div>
+	
+	<div id="iPlay" style="height:20px;position:absolute;" onClick="PlayPause();">Play</div>
+
+	<div id="blankline" style="height:20px;position:absolute;">&nbsp;</div>
+	
+	<script>
+		
+		MoveSelectBox();
+		GetAxisInfo();
+		PaintMyRadius(5, 30)
+		//ViewNav($("ShowType_Y"));
+		
+		$("Axis_X_lbl").innerHTML = Config_Axis[0];
+		$("Axis_Y_lbl").innerHTML = Config_Axis[1];
+		$("Axis_R_lbl").innerHTML = Config_Axis[2];
+		Axis_X_Name = Config_Axis[0], Axis_Y_Name = Config_Axis[1], Axis_R_Name = Config_Axis[2];
+		iDate = DateRange[0];
+		draw(0, true, 1000, 650, undefined, undefined, true);
+		//=================================================================================================================
+		var winSlider = new neverModules.modules.slider(
+		{	targetId: "MySlider",
+			sliderCss: "winSlider",
+			barCss: "winBar",
+			min: 0,
+			max: DateRange.length - 1,
+			hints: ""
+		});
+		winSlider.onstart  = function () {
+		//  getElementById("sliderDetail").innerHTML = "onstart: winSlider Start value is " +winSlider.getValue();
+		}
+		winSlider.onchange = function () {
+			iDateIndex = this.getValue()
+			draw(iDateIndex);
+			
+		};
+		winSlider.onend = function () {
+		//draw(this.getValue(), true, 1000, 650, undefined, undefined, true);
+		}
+		winSlider.create();
+		winSlider.setValue(0);
+
+		$("MySlider_slider").style.width = $("MySlider").style.width;
+		var tmr;
+		PlayPause = function(){
+			if($("iPlay").innerHTML == "Play"){
+				$("iPlay").innerHTML = "Pause";
+				tmr = setInterval("MyPlay(tmr)", 200);
+			}else{
+				clearInterval(tmr);
+				$("iPlay").innerHTML = "Play";
+			}
+		}
+		
+		MyPlay = function(tmr){
+			giDateIndex++;
+			winSlider.setValue(giDateIndex);
+			if(giDateIndex == DateRange.length - 1){
+				clearInterval(tmr);
+				$("iPlay").innerHTML = "Play";
+			}
+		}
+		
+		
+		
+		
+		//======================================
+		$("SegmentStyle").innerHTML = "<div style=\"width: 60px; text-align: center; font-size: 14px; font-weight: bold; margin: 5px; float: left; \">分类：</div>"
+		for(var i = 0; i < Segment.length; i++){
+			txt = "<div style=\"width: 60px; text-align: center; font-size: 14px; font-weight: bold; margin: 5px; padding: 5px; float: left; background-color:rgb(" + ColorList[i] + ")\">" + Segment[i] + "</div>"
+			$("SegmentStyle").innerHTML += txt;
+		}
+	</script>
+</body>
+</html>
